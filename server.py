@@ -8,8 +8,8 @@ nodemcu_ip = "192.168.1.100"
 # OpenAI Variables
 api_key = "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"
 model = "gpt-3.5-turbo" # text-ada-001 text-babbage-001 text-curie-001 gpt-3.5-turbo
-temp = 0.7
-tokens = 50
+temp = 1.0
+tokens = 40
 
 # User chosen plant variables
 plant_dict = {
@@ -77,15 +77,32 @@ def get_gpt_response(prompt):
     chat_response
     return chat_response
 
+def remove_extra_newlines(input_str):
+    lines = input_str.split('\n')
+
+    new_lines = []
+    for i, line in enumerate(lines):
+        if ':' in line:
+            continue
+        if i > 0 and line == '':
+            continue
+        new_lines.append(line)
+
+    return ' '.join(new_lines)
+
 def cut_string(string):
-    index = string.rfind('.')
-    if index != -1:
-        return string[:index+1]
+    last_index = -1
+    for char in ['.', '!', '?']:
+        index = string.rfind(char)
+        if index > last_index:
+            last_index = index
+    if last_index != -1:
+        return string[:last_index+1]
     else:
         return string
 
 def random_uppercase_char():
-    excluded_letters = ['Q', 'X', 'Z', 'K']  # exclude the least used letters
+    excluded_letters = ['Q', 'X', 'Z', 'K', 'V', 'A', 'I']  # exclude the least used letters
     while True:
         letter = chr(random.randint(65, 90))
         if letter not in excluded_letters:
@@ -99,19 +116,16 @@ def generate_response(plant_status):
     gpt_response = random_starting_letter + get_gpt_response(gpt_system_instruction)
     gpt_response = remove_quotes(gpt_response)
     gpt_response = cut_string(gpt_response)
+    gpt_response = remove_extra_newlines(gpt_response)
     return gpt_response
 
 def get_plant_status(water_level):
     if(water_level<5):
         return 'extremely underwatered'
-    elif(water_level<10):
+    elif(water_level<15):
         return 'underwatered'
-    elif(water_level < 20):
-        return 'healthy but almost underwatered'
-    elif (water_level < 65):
-        return 'healthy-watered'
-    elif (water_level < 75):
-        return 'healthy but almost overwatered'
+    elif (water_level < 80):
+        return 'not thirsty,healthy'
     elif (water_level < 90):
         return 'overwatered'
     else:
